@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Agenda Inteligente - Calendário, Tarefas, Lembretes e Notas" />
+  <title>Agenda Inteligente</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>" />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --radius: 14px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --nav-h: 64px;
+      --header-h: 56px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --bg-card: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-light: #1e3a5f;
+      --border: #334155;
+      --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="amoled"] {
+      --bg: #000000;
+      --bg-card: #0a0a0a;
+      --text: #f5f5f5;
+      --text-muted: #a3a3a3;
+      --primary: #60a5fa;
+      --primary-light: #1a1a2e;
+      --border: #222;
+      --shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+
+    [data-theme="sepia"] {
+      --bg: #f5f0e6;
+      --bg-card: #faf6ee;
+      --text: #3d2b1f;
+      --text-muted: #8b7355;
+      --primary: #a16207;
+      --primary-light: #fef3c7;
+      --border: #e8d9c0;
+    }
+
+    [data-theme="azul"] {
+      --bg: #eff6ff;
+      --bg-card: #ffffff;
+      --text: #1e3a5f;
+      --text-muted: #64748b;
+      --primary: #1d4ed8;
+      --primary-light: #dbeafe;
+      --border: #bfdbfe;
+    }
+
+    [data-theme="verde"] {
+      --bg: #f0fdf4;
+      --bg-card: #ffffff;
+      --text: #14532d;
+      --text-muted: #4b5563;
+      --primary: #16a34a;
+      --primary-light: #dcfce7;
+      --border: #bbf7d0;
+    }
+
+    [data-theme="roxo"] {
+      --bg: #faf5ff;
+      --bg-card: #ffffff;
+      --text: #3b0764;
+      --text-muted: #6b7280;
+      --primary: #7c3aed;
+      --primary-light: #ede9fe;
+      --border: #ddd6fe;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); }
+    body { display: flex; flex-direction: column; }
+
+    /* Header */
+    .header {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 50;
+    }
+    .header h1 { font-size: 1.15rem; font-weight: 700; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+      width: 40px; height: 40px; border: none; background: transparent;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; cursor: pointer; color: var(--text);
+    }
+    .icon-btn:active { background: var(--primary-light); }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(var(--nav-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around; align-items: center;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; padding: 6px 0; border: none; background: none; color: var(--text-muted);
+      font-size: 0.7rem; cursor: pointer; transition: color 0.2s;
+    }
+    .nav-item.active { color: var(--primary); font-weight: 600; }
+    .nav-item span.icon { font-size: 1.4rem; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin: 0 12px 12px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .card-title { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+    /* Greeting */
+    .greeting { padding: 20px 16px 8px; }
+    .greeting h2 { font-size: 1.5rem; font-weight: 700; }
+    .greeting p { color: var(--text-muted); font-size: 0.9rem; margin-top: 2px; }
+
+    /* Event item */
+    .event-item, .task-item, .note-item, .bday-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .event-item:last-child, .task-item:last-child, .note-item:last-child, .bday-item:last-child { border-bottom: none; }
+    .event-dot {
+      width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+    }
+    .event-time { font-size: 0.8rem; font-weight: 600; color: var(--primary); min-width: 48px; }
+    .event-body { flex: 1; min-width: 0; }
+    .event-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Priority */
+    .prio-alta { border-left: 4px solid var(--danger); }
+    .prio-media { border-left: 4px solid var(--warning); }
+    .prio-baixa { border-left: 4px solid var(--success); }
+
+    /* Checkbox */
+    .check {
+      width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      margin-top: 2px; cursor: pointer; transition: all 0.15s;
+    }
+    .check.done { background: var(--success); border-color: var(--success); color: white; }
+    .task-done .event-title { text-decoration: line-through; color: var(--text-muted); }
+
+    /* FAB */
+    .fab {
+      position: fixed; right: 18px; bottom: calc(var(--nav-h) + var(--safe-bottom) + 18px);
+      width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: white;
+      border: none; font-size: 1.8rem; box-shadow: 0 4px 16px rgba(37,99,235,0.4);
+      z-index: 90; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s;
+    }
+    .fab:active { transform: scale(0.92); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200;
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--bg-card); width: 100%; max-width: 480px;
+      border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto;
+      padding: 20px 16px calc(20px + var(--safe-bottom));
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h3 { font-size: 1.15rem; font-weight: 700; }
+    .modal-close { font-size: 1.5rem; background: none; border: none; color: var(--text-muted); cursor: pointer; }
+
+    /* Forms */
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg); color: var(--text); font-size: 1rem; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
+    }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 12px 18px; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.85; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-secondary { background: var(--primary-light); color: var(--primary); }
+    .btn-danger { background: #fee2e2; color: var(--danger); }
+    .btn-group { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-group .btn { flex: 1; }
+
+    /* Calendar */
+    .cal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
+    .cal-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .cal-nav { display: flex; gap: 4px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 0 8px 12px; }
+    .cal-day-name { text-align: center; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); padding: 6px 0; }
+    .cal-day {
+      aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 10px; font-size: 0.9rem; cursor: pointer; position: relative;
+    }
+    .cal-day:active { background: var(--primary-light); }
+    .cal-day.other { color: var(--text-muted); opacity: 0.45; }
+    .cal-day.today { background: var(--primary); color: white; font-weight: 700; }
+    .cal-day.selected { outline: 2px solid var(--primary); outline-offset: -2px; }
+    .cal-day.has-events::after {
+      content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px;
+      border-radius: 50%; background: var(--primary);
+    }
+    .cal-day.today.has-events::after { background: white; }
+
+    /* View tabs */
+    .view-tabs { display: flex; gap: 6px; padding: 0 12px 12px; }
+    .view-tab {
+      flex: 1; padding: 8px; text-align: center; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-card); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); cursor: pointer;
+    }
+    .view-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Smart input */
+    .smart-box {
+      margin: 0 12px 16px; padding: 14px; background: var(--bg-card); border-radius: var(--radius);
+      border: 2px dashed var(--primary); display: flex; gap: 8px; align-items: center;
+    }
+    .smart-box input {
+      flex: 1; border: none; background: transparent; font-size: 0.95rem; color: var(--text); outline: none;
+    }
+    .smart-box button {
+      background: var(--primary); color: white; border: none; border-radius: 10px;
+      padding: 8px 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+
+    /* Search */
+    .search-bar {
+      margin: 12px; display: flex; align-items: center; gap: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px;
+    }
+    .search-bar input { flex: 1; border: none; background: transparent; font-size: 1rem; color: var(--text); outline: none; }
+
+    /* Category chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; }
+    .chip {
+      padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); cursor: pointer;
+    }
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px 12px; }
+    .stat-card {
+      background: var(--bg-card); border-radius: var(--radius); padding: 16px; text-align: center;
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+    }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 80px); left: 50%;
+      transform: translateX(-50%) translateY(20px); background: #1e293b; color: white;
+      padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; opacity: 0;
+      transition: all 0.3s; z-index: 300; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Reminder list */
+    .reminder-row {
+      display: flex; align-items: center; gap: 12px; padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .reminder-row:last-child { border-bottom: none; }
+    .reminder-status { font-size: 1.2rem; }
+
+    /* Settings */
+    .settings-section { margin-bottom: 20px; }
+    .settings-section h3 { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); padding: 0 16px 8px; text-transform: uppercase; }
+    .settings-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: var(--bg-card); border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .settings-item:first-of-type { border-radius: 12px 12px 0 0; }
+    .settings-item:last-of-type { border-radius: 0 0 12px 12px; border-bottom: none; }
+    .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px; }
+    .theme-btn {
+      padding: 10px 4px; border-radius: 10px; border: 2px solid var(--border);
+      text-align: center; font-size: 0.7rem; font-weight: 600; cursor: pointer; background: var(--bg-card);
+    }
+    .theme-btn.active { border-color: var(--primary); background: var(--primary-light); }
+
+    /* Color dots for categories */
+    .cat-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+    /* Subtasks */
+    .subtask { display: flex; align-items: center; gap: 8px; padding: 6px 0 6px 34px; font-size: 0.9rem; }
+    .subtask .check { width: 18px; height: 18px; }
+
+    /* Day agenda timeline */
+    .timeline { padding: 0 12px; }
+    .timeline-item { display: flex; gap: 12px; margin-bottom: 4px; }
+    .timeline-time { width: 50px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); padding-top: 12px; text-align: right; }
+    .timeline-line { width: 2px; background: var(--border); position: relative; }
+    .timeline-line::before {
+      content: ''; position: absolute; top: 16px; left: -4px; width: 10px; height: 10px;
+      border-radius: 50%; background: var(--primary); border: 2px solid var(--bg-card);
+    }
+    .timeline-content { flex: 1; padding: 8px 0 16px; }
+
+    /* Badge */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;
+      font-weight: 600; background: var(--primary-light); color: var(--primary);
+    }
+
+    /* Hide sections */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Quick add menu */
+    .quick-menu {
+      position: fixed; right: 18px; bottom: calc(var(--nav-h) + var(--safe-bottom) + 80px);
+      display: none; flex-direction: column; gap: 8px; z-index: 95;
+    }
+    .quick-menu.show { display: flex; }
+    .quick-btn {
+      display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow); font-weight: 600; font-size: 0.9rem; cursor: pointer; color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1 id="pageTitle">Início</h1>
+    <div class="header-actions">
+      <button class="icon-btn" id="btnSearch" title="Pesquisar">🔍</button>
+      <button class="icon-btn" id="btnNotif" title="Notificações">🔔</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <!-- ========== INÍCIO ========== -->
+    <div class="page active" id="page-home">
+      <div class="greeting">
+        <h2 id="greetingText">Bom dia!</h2>
+        <p id="greetingDate"></p>
+      </div>
+
+      <div class="smart-box">
+        <input type="text" id="smartInput" placeholder='Ex: "Dentista dia 15 às 14h, lembrar 1 dia antes"' />
+        <button onclick="parseSmartInput()">Criar</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Hoje</div>
+        <div id="todayEvents"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tarefas pendentes</div>
+        <div id="pendingTasks"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Próximos aniversários</div>
+        <div id="upcomingBdays"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Notas recentes</div>
+        <div id="recentNotes"></div>
+      </div>
+    </div>
+
+    <!-- ========== CALENDÁRIO ========== -->
+    <div class="page" id="page-calendar">
+      <div class="view-tabs">
+        <button class="view-tab active" data-view="month" onclick="setCalView('month')">Mês</button>
+        <button class="view-tab" data-view="week" onclick="setCalView('week')">Semana</button>
+        <button class="view-tab" data-view="day" onclick="setCalView('day')">Dia</button>
+      </div>
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="icon-btn" onclick="changeMonth(-1)">◀</button>
+        </div>
+        <h2 id="calMonthLabel"></h2>
+        <div class="cal-nav">
+          <button class="icon-btn" onclick="changeMonth(1)">▶</button>
+          <button class="icon-btn" onclick="goToday()" title="Hoje">◉</button>
+        </div>
+      </div>
+      <div id="calContainer"></div>
+      <div class="card" style="margin-top:8px">
+        <div class="card-title" id="dayAgendaTitle">Agenda do dia</div>
+        <div id="dayAgenda"></div>
+      </div>
+    </div>
+
+    <!-- ========== TAREFAS ========== -->
+    <div class="page" id="page-tasks">
+      <div class="chips" id="taskFilters">
+        <button class="chip active" data-filter="all" onclick="filterTasks('all')">Todas</button>
+        <button class="chip" data-filter="pendente" onclick="filterTasks('pendente')">Pendentes</button>
+        <button class="chip" data-filter="concluida" onclick="filterTasks('concluida')">Concluídas</button>
+        <button class="chip" data-filter="alta" onclick="filterTasks('alta')">Prioridade alta</button>
+      </div>
+      <div id="tasksList"></div>
+    </div>
+
+    <!-- ========== LEMBRETES ========== -->
+    <div class="page" id="page-reminders">
+      <div class="card">
+        <div class="card-title">🔔 Central de Lembretes</div>
+        <div id="remindersList"></div>
+      </div>
+      <div style="padding:0 12px 12px">
+        <button class="btn btn-secondary" style="width:100%" onclick="testNotification()">🔔 Testar notificação</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Aniversários</div>
+        <div id="birthdaysList"></div>
+      </div>
+    </div>
+
+    <!-- ========== NOTAS ========== -->
+    <div class="page" id="page-notes">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="notesSearch" placeholder="Pesquisar notas..." oninput="renderNotes()" />
+      </div>
+      <div class="chips" id="noteFilters">
+        <button class="chip active" data-filter="all" onclick="filterNotes('all')">Todas</button>
+        <button class="chip" data-filter="pinned" onclick="filterNotes('pinned')">Fixadas</button>
+        <button class="chip" data-filter="favorito" onclick="filterNotes('favorito')">Favoritos</button>
+      </div>
+      <div id="notesList"></div>
+    </div>
+
+    <!-- ========== CONFIGURAÇÕES ========== -->
+    <div class="page" id="page-settings">
+      <div class="settings-section">
+        <h3>Aparência</h3>
+        <div class="theme-grid" id="themeGrid">
+          <button class="theme-btn active" data-theme="light" onclick="setTheme('light')">☀️ Claro</button>
+          <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">🌙 Escuro</button>
+          <button class="theme-btn" data-theme="amoled" onclick="setTheme('amoled')">🖤 AMOLED</button>
+          <button class="theme-btn" data-theme="sepia" onclick="setTheme('sepia')">🟤 Sépia</button>
+          <button class="theme-btn" data-theme="azul" onclick="setTheme('azul')">🌊 Azul</button>
+          <button class="theme-btn" data-theme="verde" onclick="setTheme('verde')">🟢 Verde</button>
+          <button class="theme-btn" data-theme="roxo" onclick="setTheme('roxo')">🟣 Roxo</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Preferências</h3>
+        <div class="settings-item">
+          <span>Primeiro dia da semana</span>
+          <select id="firstDayWeek" onchange="saveSettings()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
+            <option value="0">Domingo</option>
+            <option value="1">Segunda</option>
+          </select>
+        </div>
+        <div class="settings-item">
+          <span>Formato de hora</span>
+          <select id="timeFormat" onchange="saveSettings()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
+            <option value="24">24 horas</option>
+            <option value="12">12 horas</option>
+          </select>
+        </div>
+        <div class="settings-item">
+          <span>Nome do usuário</span>
+          <input type="text" id="userName" placeholder="Seu nome" onchange="saveSettings()" style="width:140px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);text-align:right" />
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Estatísticas</h3>
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
+      <div class="settings-section">
+        <h3>Dados</h3>
+        <div class="settings-item" onclick="exportData()">
+          <span>📤 Exportar backup</span>
+          <span>›</span>
+        </div>
+        <div class="settings-item" onclick="document.getElementById('importFile').click()">
+          <span>📥 Importar backup</span>
+          <span>›</span>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
+        <div class="settings-item" onclick="clearAllData()">
+          <span style="color:var(--danger)">🗑️ Limpar todos os dados</span>
+          <span>›</span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Sobre</h3>
+        <div class="settings-item">
+          <span>Agenda Inteligente v1.0</span>
+          <span>PWA</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PESQUISA ========== -->
+    <div class="page" id="page-search">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="globalSearch" placeholder="Pesquisar tudo..." oninput="doGlobalSearch()" autofocus />
+      </div>
+      <div id="searchResults"></div>
+    </div>
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home" onclick="goPage('home')">
+      <span class="icon">🏠</span> Início
+    </button>
+    <button class="nav-item" data-page="calendar" onclick="goPage('calendar')">
+      <span class="icon">📅</span> Agenda
+    </button>
+    <button class="nav-item" data-page="tasks" onclick="goPage('tasks')">
+      <span class="icon">✅</span> Tarefas
+    </button>
+    <button class="nav-item" data-page="reminders" onclick="goPage('reminders')">
+      <span class="icon">🔔</span> Lembretes
+    </button>
+    <button class="nav-item" data-page="notes" onclick="goPage('notes')">
+      <span class="icon">📝</span> Notas
+    </button>
+    <button class="nav-item" data-page="settings" onclick="goPage('settings')">
+      <span class="icon">⚙️</span> Config
+    </button>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" id="fab" onclick="toggleQuickMenu()">＋</button>
+  <div class="quick-menu" id="quickMenu">
+    <button class="quick-btn" onclick="openModal('event')">📅 Evento</button>
+    <button class="quick-btn" onclick="openModal('task')">✅ Tarefa</button>
+    <button class="quick-btn" onclick="openModal('note')">📝 Nota</button>
+    <button class="quick-btn" onclick="openModal('birthday')">🎂 Aniversário</button>
+    <button class="quick-btn" onclick="openModal('consulta')">🩺 Consulta</button>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ==================== DATA ====================
+    const CATEGORIES = [
+      { id: 'pessoal', name: 'Pessoal', color: '#3b82f6', icon: '👤' },
+      { id: 'trabalho', name: 'Trabalho', color: '#8b5cf6', icon: '💼' },
+      { id: 'saude', name: 'Saúde', color: '#ef4444', icon: '🩺' },
+      { id: 'financeiro', name: 'Financeiro', color: '#16a34a', icon: '💰' },
+      { id: 'compras', name: 'Compras', color: '#f59e0b', icon: '🛒' },
+      { id: 'aniversarios', name: 'Aniversários', color: '#ec4899', icon: '🎂' },
+      { id: 'estudos', name: 'Estudos', color: '#06b6d4', icon: '📚' },
+      { id: 'casa', name: 'Casa', color: '#84cc16', icon: '🏠' },
+      { id: 'veiculo', name: 'Veículo', color: '#64748b', icon: '🚗' },
+      { id: 'viagens', name: 'Viagens', color: '#0ea5e9', icon: '✈️' },
+      { id: 'outros', name: 'Outros', color: '#a3a3a3', icon: '📌' },
+    ];
+
+    const HOLIDAYS_BR = [
+      { m: 1, d: 1, name: 'Confraternização Universal' },
+      { m: 4, d: 21, name: 'Tiradentes' },
+      { m: 5, d: 1, name: 'Dia do Trabalho' },
+      { m: 9, d: 7, name: 'Independência do Brasil' },
+      { m: 10, d: 12, name: 'Nossa Senhora Aparecida' },
+      { m: 11, d: 2, name: 'Finados' },
+      { m: 11, d: 15, name: 'Proclamação da República' },
+      { m: 12, d: 25, name: 'Natal' },
+    ];
+
+    let data = {
+      events: [],
+      tasks: [],
+      notes: [],
+      birthdays: [],
+      settings: { theme: 'light', firstDay: 0, timeFormat: '24', userName: '' }
+    };
+
+    let calDate = new Date();
+    let selectedDay = new Date();
+    let calView = 'month';
+    let taskFilter = 'all';
+    let noteFilter = 'all';
+    let editingId = null;
+    let editingType = null;
+
+    // ==================== STORAGE ====================
+    function loadData() {
+      try {
+        const raw = localStorage.getItem('agenda_inteligente');
+        if (raw) {
+          data = JSON.parse(raw);
+          if (!data.settings) data.settings = { theme: 'light', firstDay: 0, timeFormat: '24', userName: '' };
+        }
+      } catch (e) { console.warn(e); }
+    }
+
+    function saveData() {
+      localStorage.setItem('agenda_inteligente', JSON.stringify(data));
+    }
+
+    // ==================== UTILS ====================
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function formatDate(d) {
+      if (!(d instanceof Date)) d = new Date(d);
+      return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+    }
+
+    function formatTime(d) {
+      if (!(d instanceof Date)) d = new Date(d);
+      if (data.settings.timeFormat === '12') {
+        let h = d.getHours();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${h}:${pad(d.getMinutes())} ${ampm}`;
+      }
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function formatDateTime(d) {
+      return formatDate(d) + ' ' + formatTime(d);
+    }
+
+    function isSameDay(a, b) {
+      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+
+    function daysUntil(dateStr) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const d = new Date(dateStr); d.setHours(0,0,0,0);
+      return Math.round((d - today) / 86400000);
+    }
+
+    function getAge(birthStr) {
+      const b = new Date(birthStr);
+      const t = new Date();
+      let age = t.getFullYear() - b.getFullYear();
+      if (t.getMonth() < b.getMonth() || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) age--;
+      return age;
+    }
+
+    function nextBirthday(birthStr) {
+      const b = new Date(birthStr);
+      const t = new Date();
+      let next = new Date(t.getFullYear(), b.getMonth(), b.getDate());
+      if (next < t) next = new Date(t.getFullYear() + 1, b.getMonth(), b.getDate());
+      return next;
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    function catColor(id) {
+      return (CATEGORIES.find(c => c.id === id) || {}).color || '#64748b';
+    }
+
+    function catName(id) {
+      return (CATEGORIES.find(c => c.id === id) || {}).name || id;
+    }
+
+    function greeting() {
+      const h = new Date().getHours();
+      if (h < 12) return 'Bom dia';
+      if (h < 18) return 'Boa tarde';
+      return 'Boa noite';
+    }
+
+    // ==================== NAVIGATION ====================
+    function goPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + page).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+      const titles = { home: 'Início', calendar: 'Calendário', tasks: 'Tarefas', reminders: 'Lembretes', notes: 'Notas', settings: 'Configurações', search: 'Pesquisar' };
+      document.getElementById('pageTitle').textContent = titles[page] || page;
+      document.getElementById('quickMenu').classList.remove('show');
+      if (page === 'home') renderHome();
+      if (page === 'calendar') renderCalendar();
+      if (page === 'tasks') renderTasks();
+      if (page === 'reminders') renderReminders();
+      if (page === 'notes') renderNotes();
+      if (page === 'settings') renderSettings();
+    }
+
+    function toggleQuickMenu() {
+      document.getElementById('quickMenu').classList.toggle('show');
+    }
+
+    // ==================== THEME ====================
+    function setTheme(t) {
+      data.settings.theme = t;
+      document.documentElement.setAttribute('data-theme', t === 'light' ? '' : t);
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
+      saveData();
+    }
+
+    function saveSettings() {
+      data.settings.firstDay = parseInt(document.getElementById('firstDayWeek').value);
+      data.settings.timeFormat = document.getElementById('timeFormat').value;
+      data.settings.userName = document.getElementById('userName').value.trim();
+      saveData();
+      renderHome();
+      toast('Configurações salvas');
+    }
+
+    // ==================== HOME ====================
+    function renderHome() {
+      const name = data.settings.userName;
+      document.getElementById('greetingText').textContent = greeting() + (name ? ', ' + name + '!' : '!');
+      const now = new Date();
+      const weekdays = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+      document.getElementById('greetingDate').textContent = `${weekdays[now.getDay()]}, ${formatDate(now)}`;
+
+      // Today events
+      const todayEv = data.events
+        .filter(e => isSameDay(new Date(e.date), now))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      const todayTasks = data.tasks.filter(t => t.due && isSameDay(new Date(t.due), now) && !t.done);
+      const allToday = [
+        ...todayEv.map(e => ({ type: 'event', ...e })),
+        ...todayTasks.map(t => ({ type: 'task', ...t, date: t.due }))
+      ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const te = document.getElementById('todayEvents');
+      if (!allToday.length) {
+        te.innerHTML = '<div class="empty"><div class="icon">📭</div>Nenhum compromisso hoje</div>';
+      } else {
+        te.innerHTML = allToday.map(item => {
+          if (item.type === 'event') {
+            return `<div class="event-item" onclick="openModal('event','${item.id}')">
+              <div class="event-dot" style="background:${catColor(item.category)}"></div>
+              <div class="event-time">${formatTime(new Date(item.date))}</div>
+              <div class="event-body">
+                <div class="event-title">${esc(item.title)}</div>
+                <div class="event-meta">${item.location ? '📍 ' + esc(item.location) : catName(item.category)}</div>
+              </div>
+            </div>`;
+          }
+          return `<div class="event-item" onclick="openModal('task','${item.id}')">
+            <div class="event-dot" style="background:${item.priority==='alta'?'#dc2626':item.priority==='media'?'#d97706':'#16a34a'}"></div>
+            <div class="event-time">${item.due ? formatTime(new Date(item.due)) : '—'}</div>
+            <div class="event-body">
+              <div class="event-title">✅ ${esc(item.title)}</div>
+              <div class="event-meta">Tarefa · ${item.priority || 'média'}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      // Pending tasks
+      const pending = data.tasks.filter(t => !t.done).slice(0, 5);
+      const pt = document.getElementById('pendingTasks');
+      if (!pending.length) {
+        pt.innerHTML = '<div class="empty" style="padding:20px"><div class="icon">🎉</div>Tudo em dia!</div>';
+      } else {
+        pt.innerHTML = pending.map(t => `
+          <div class="task-item ${t.done?'task-done':''} prio-${t.priority||'media'}" onclick="openModal('task','${t.id}')">
+            <div class="check ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
+            <div class="event-body">
+              <div class="event-title">${esc(t.title)}</div>
+              <div class="event-meta">${t.due ? formatDateTime(new Date(t.due)) : 'Sem prazo'} · ${catName(t.category)}</div>
+            </div>
+          </div>`).join('');
+      }
+
+      // Birthdays
+      const bdays = data.birthdays
+        .map(b => ({ ...b, next: nextBirthday(b.date), days: daysUntil(nextBirthday(b.date).toISOString()) }))
+        .sort((a, b) => a.days - b.days)
+        .slice(0, 5);
+      const ub = document.getElementById('upcomingBdays');
+      if (!bdays.length) {
+        ub.innerHTML = '<div class="empty" style="padding:20px"><div class="icon">🎂</div>Nenhum aniversário cadastrado</div>';
+      } else {
+        ub.innerHTML = bdays.map(b => `
+          <div class="bday-item" onclick="openModal('birthday','${b.id}')">
+            <div style="font-size:1.5rem">🎂</div>
+            <div class="event-body">
+              <div class="event-title">${esc(b.name)}</div>
+              <div class="event-meta">${b.days === 0 ? '🎉 Hoje!' : b.days === 1 ? 'Amanhã' : `Em ${b.days} dias`} · ${getAge(b.date) + (b.days===0?0:1)} anos</div>
+            </div>
+          </div>`).join('');
+      }
+
+      // Recent notes
+      const notes = [...data.notes].sort((a,b) => new Date(b.updated||b.created) - new Date(a.updated||a.created)).slice(0, 4);
+      const rn = document.getElementById('recentNotes');
+      if (!notes.length) {
+        rn.innerHTML = '<div class="empty" style="padding:20px"><div class="icon">📝</div>Nenhuma nota</div>';
+      } else {
+        rn.innerHTML = notes.map(n => `
+          <div class="note-item" onclick="openModal('note','${n.id}')">
+            <div style="font-size:1.2rem">${n.pinned ? '📌' : '📄'}</div>
+            <div class="event-body">
+              <div class="event-title">${esc(n.title || 'Sem título')}</div>
+              <div class="event-meta">${esc((n.content||'').slice(0,60))}${(n.content||'').length>60?'…':''}</div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // ==================== CALENDAR ====================
+    function setCalView(v) {
+      calView = v;
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+      renderCalendar();
+    }
+
+    function changeMonth(dir) {
+      if (calView === 'month') {
+        calDate.setMonth(calDate.getMonth() + dir);
+      } else if (calView === 'week') {
+        calDate.setDate(calDate.getDate() + dir * 7);
+      } else {
+        calDate.setDate(calDate.getDate() + dir);
+        selectedDay = new Date(calDate);
+      }
+      renderCalendar();
+    }
+
+    function goToday() {
+      calDate = new Date();
+      selectedDay = new Date();
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      document.getElementById('calMonthLabel').textContent = `${months[calDate.getMonth()]} ${calDate.getFullYear()}`;
+
+      if (calView === 'month') renderMonth();
+      else if (calView === 'week') renderWeek();
+      else renderDayView();
+
+      renderDayAgenda();
+    }
+
+    function renderMonth() {
+      const year = calDate.getFullYear();
+      const month = calDate.getMonth();
+      const firstDay = data.settings.firstDay || 0;
+      let start = new Date(year, month, 1);
+      let startDow = start.getDay();
+      let offset = (startDow - firstDay + 7) % 7;
+      start.setDate(1 - offset);
+
+      const dayNames = firstDay === 1
+        ? ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']
+        : ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+      let html = dayNames.map(d => `<div class="cal-day-name">${d}</div>`).join('');
+      const today = new Date();
+
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const isOther = d.getMonth() !== month;
+        const isToday = isSameDay(d, today);
+        const isSelected = isSameDay(d, selectedDay);
+        const hasEv = data.events.some(e => isSameDay(new Date(e.date), d)) ||
+                      data.tasks.some(t => t.due && isSameDay(new Date(t.due), d)) ||
+                      HOLIDAYS_BR.some(h => h.m === d.getMonth()+1 && h.d === d.getDate());
+
+        html += `<div class="cal-day ${isOther?'other':''} ${isToday?'today':''} ${isSelected?'selected':''} ${hasEv?'has-events':''}"
+          onclick="selectDay(${d.getFullYear()},${d.getMonth()},${d.getDate()})">${d.getDate()}</div>`;
+      }
+      document.getElementById('calContainer').innerHTML = `<div class="cal-grid">${html}</div>`;
+    }
+
+    function renderWeek() {
+      const firstDay = data.settings.firstDay || 0;
+      const d = new Date(calDate);
+      const dow = d.getDay();
+      const offset = (dow - firstDay + 7) % 7;
+      d.setDate(d.getDate() - offset);
+
+      const dayNames = firstDay === 1
+        ? ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']
+        : ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      const today = new Date();
+      let html = dayNames.map(n => `<div class="cal-day-name">${n}</div>`).join('');
+
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(d);
+        day.setDate(d.getDate() + i);
+        const isToday = isSameDay(day, today);
+        const isSelected = isSameDay(day, selectedDay);
+        const hasEv = data.events.some(e => isSameDay(new Date(e.date), day));
+        html += `<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''} ${hasEv?'has-events':''}"
+          style="aspect-ratio:auto;min-height:48px;font-size:1rem"
+          onclick="selectDay(${day.getFullYear()},${day.getMonth()},${day.getDate()})">${day.getDate()}</div>`;
+      }
+      document.getElementById('calContainer').innerHTML = `<div class="cal-grid">${html}</div>`;
+      document.getElementById('calMonthLabel').textContent =
+        `${formatDate(d)} – ${formatDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()+6))}`;
+    }
+
+    function renderDayView() {
+      document.getElementById('calContainer').innerHTML = '';
+      selectedDay = new Date(calDate);
+      document.getElementById('calMonthLabel').textContent = formatDate(calDate);
+    }
+
+    function selectDay(y, m, d) {
+      selectedDay = new Date(y, m, d);
+      calDate = new Date(y, m, d);
+      renderCalendar();
+    }
+
+    function renderDayAgenda() {
+      const d = selectedDay;
+      document.getElementById('dayAgendaTitle').textContent = `Agenda de ${formatDate(d)}`;
+      const events = data.events.filter(e => isSameDay(new Date(e.date), d)).sort((a,b) => new Date(a.date)-new Date(b.date));
+      const tasks = data.tasks.filter(t => t.due && isSameDay(new Date(t.due), d));
+      const holidays = HOLIDAYS_BR.filter(h => h.m === d.getMonth()+1 && h.d === d.getDate());
+      const bdays = data.birthdays.filter(b => {
+        const bd = new Date(b.date);
+        return bd.getMonth() === d.getMonth() && bd.getDate() === d.getDate();
+      });
+
+      let html = '';
+      holidays.forEach(h => {
+        html += `<div class="event-item"><div class="event-dot" style="background:#dc2626"></div>
+          <div class="event-body"><div class="event-title">🎌 ${esc(h.name)}</div><div class="event-meta">Feriado nacional</div></div></div>`;
+      });
+      bdays.forEach(b => {
+        html += `<div class="event-item" onclick="openModal('birthday','${b.id}')"><div style="font-size:1.2rem">🎂</div>
+          <div class="event-body"><div class="event-title">Aniversário de ${esc(b.name)}</div>
+          <div class="event-meta">${getAge(b.date)} anos</div></div></div>`;
+      });
+      events.forEach(e => {
+        html += `<div class="event-item" onclick="openModal('event','${e.id}')">
+          <div class="event-dot" style="background:${catColor(e.category)}"></div>
+          <div class="event-time">${formatTime(new Date(e.date))}</div>
+          <div class="event-body">
+            <div class="event-title">${esc(e.title)}</div>
+            <div class="event-meta">${e.location ? '📍 '+esc(e.location)+' · ' : ''}${catName(e.category)}${e.type==='consulta'?' · 🩺 Consulta':''}</div>
+          </div>
+        </div>`;
+      });
+      tasks.forEach(t => {
+        html += `<div class="event-item" onclick="openModal('task','${t.id}')">
+          <div class="check ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
+          <div class="event-body">
+            <div class="event-title">${esc(t.title)}</div>
+            <div class="event-meta">Tarefa · ${t.priority||'média'}</div>
+          </div>
+        </div>`;
+      });
+
+      if (!html) html = '<div class="empty" style="padding:24px"><div class="icon">📭</div>Nada agendado</div>';
+      document.getElementById('dayAgenda').innerHTML = html;
+    }
+
+    // ==================== TASKS ====================
+    function filterTasks(f) {
+      taskFilter = f;
+      document.querySelectorAll('#taskFilters .chip').forEach(c => c.classList.toggle('active', c.dataset.filter === f));
+      renderTasks();
+    }
+
+    function renderTasks() {
+      let list = [...data.tasks];
+      if (taskFilter === 'pendente') list = list.filter(t => !t.done);
+      else if (taskFilter === 'concluida') list = list.filter(t => t.done);
+      else if (taskFilter === 'alta') list = list.filter(t => t.priority === 'alta' && !t.done);
+
+      list.sort((a, b) => {
+        if (a.done !== b.done) return a.done ? 1 : -1;
+        const po = { alta: 0, media: 1, baixa: 2 };
+        return (po[a.priority]||1) - (po[b.priority]||1);
+      });
+
+      const el = document.getElementById('tasksList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><div class="icon">✅</div>Nenhuma tarefa</div>';
+        return;
+      }
+      el.innerHTML = list.map(t => {
+        const subHtml = (t.subtasks || []).map((s, i) => `
+          <div class="subtask">
+            <div class="check ${s.done?'done':''}" onclick="toggleSubtask('${t.id}',${i})">${s.done?'✓':''}</div>
+            <span style="${s.done?'text-decoration:line-through;color:var(--text-muted)':''}">${esc(s.text)}</span>
+          </div>`).join('');
+        return `<div class="card" style="padding:10px 14px">
+          <div class="task-item ${t.done?'task-done':''} prio-${t.priority||'media'}" style="border:none;padding:6px 0" onclick="openModal('task','${t.id}')">
+            <div class="check ${t.done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">${t.done?'✓':''}</div>
+            <div class="event-body">
+              <div class="event-title">${esc(t.title)}</div>
+              <div class="event-meta">${t.due ? formatDateTime(new Date(t.due)) : 'Sem prazo'} · ${catName(t.category)} · ${t.priority||'média'}</div>
+            </div>
+          </div>
+          ${subHtml}
+        </div>`;
+      }).join('');
+    }
+
+    function toggleTask(id) {
+      const t = data.tasks.find(x => x.id === id);
+      if (t) { t.done = !t.done; saveData(); renderTasks(); renderHome(); }
+    }
+
+    function toggleSubtask(taskId, idx) {
+      const t = data.tasks.find(x => x.id === taskId);
+      if (t && t.subtasks && t.subtasks[idx]) {
+        t.subtasks[idx].done = !t.subtasks[idx].done;
+        saveData();
+        renderTasks();
+      }
+    }
+
+    // ==================== REMINDERS & BIRTHDAYS ====================
+    function renderReminders() {
+      // Build reminder list from events/tasks with reminder settings
+      const now = new Date();
+      const items = [];
+
+      data.events.forEach(e => {
+        if (e.reminders && e.reminders.length) {
+          e.reminders.forEach(r => {
+            const eventDate = new Date(e.date);
+            const remindAt = new Date(eventDate.getTime() - r * 60000);
+            items.push({
+              time: remindAt,
+              title: e.title,
+              status: remindAt < now ? '✅' : '🔔',
+              type: 'event',
+              id: e.id
+            });
+          });
+        } else {
+          // Default: show event itself as reminder
+          items.push({
+            time: new Date(e.date),
+            title: e.title,
+            status: new Date(e.date) < now ? '✅' : '🔔',
+            type: 'event',
+            id: e.id
+          });
+        }
+      });
+
+      data.tasks.filter(t => !t.done && t.due).forEach(t => {
+        items.push({
+          time: new Date(t.due),
+          title: t.title,
+          status: new Date(t.due) < now ? '⏳' : '🔔',
+          type: 'task',
+          id: t.id
+        });
+      });
+
+      items.sort((a, b) => a.time - b.time);
+
+      const el = document.getElementById('remindersList');
+      if (!items.length) {
+        el.innerHTML = '<div class="empty" style="padding:24px"><div class="icon">🔔</div>Nenhum lembrete</div>';
+      } else {
+        el.innerHTML = items.slice(0, 20).map(i => `
+          <div class="reminder-row" onclick="openModal('${i.type}','${i.id}')">
+            <div class="reminder-status">${i.status}</div>
+            <div class="event-time">${formatTime(i.time)}</div>
+            <div class="event-body">
+              <div class="event-title">${esc(i.title)}</div>
+              <div class="event-meta">${formatDate(i.time)}</div>
+            </div>
+          </div>`).join('');
+      }
+
+      // Birthdays
+      const bdays = [...data.birthdays]
+        .map(b => ({ ...b, next: nextBirthday(b.date), days: daysUntil(nextBirthday(b.date).toISOString()) }))
+        .sort((a, b) => a.days - b.days);
+
+      const bl = document.getElementById('birthdaysList');
+      if (!bdays.length) {
+        bl.innerHTML = '<div class="empty" style="padding:20px"><div class="icon">🎂</div>Nenhum aniversário</div>';
+      } else {
+        bl.innerHTML = bdays.map(b => `
+          <div class="bday-item" onclick="openModal('birthday','${b.id}')">
+            <div style="font-size:1.4rem">🎂</div>
+            <div class="event-body">
+              <div class="event-title">${esc(b.name)}</div>
+              <div class="event-meta">${formatDate(b.next)} · ${b.days===0?'Hoje!':b.days===1?'Amanhã':`Em ${b.days} dias`} · fará ${getAge(b.date)+(b.days===0?0:1)} anos</div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // ==================== NOTES ====================
+    function filterNotes(f) {
+      noteFilter = f;
+      document.querySelectorAll('#noteFilters .chip').forEach(c => c.classList.toggle('active', c.dataset.filter === f));
+      renderNotes();
+    }
+
+    function renderNotes() {
+      const q = (document.getElementById('notesSearch')?.value || '').toLowerCase();
+      let list = [...data.notes];
+      if (noteFilter === 'pinned') list = list.filter(n => n.pinned);
+      if (noteFilter === 'favorito') list = list.filter(n => n.favorite);
+      if (q) list = list.filter(n => (n.title||'').toLowerCase().includes(q) || (n.content||'').toLowerCase().includes(q));
+      list.sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return new Date(b.updated||b.created) - new Date(a.updated||a.created);
+      });
+
+      const el = document.getElementById('notesList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><div class="icon">📝</div>Nenhuma nota</div>';
+        return;
+      }
+      el.innerHTML = list.map(n => `
+        <div class="card" style="border-left:4px solid ${n.color||'var(--primary)'};cursor:pointer" onclick="openModal('note','${n.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="event-title">${n.pinned?'📌 ':''}${n.favorite?'⭐ ':''}${esc(n.title||'Sem título')}</div>
+            <span class="badge">${catName(n.category||'outros')}</span>
+          </div>
+          <div class="event-meta" style="margin-top:6px;white-space:pre-wrap">${esc((n.content||'').slice(0,120))}${(n.content||'').length>120?'…':''}</div>
+          <div class="event-meta" style="margin-top:6px">${formatDate(new Date(n.updated||n.created))}</div>
+        </div>`).join('');
+    }
+
+    // ==================== SEARCH ====================
+    function doGlobalSearch() {
+      const q = (document.getElementById('globalSearch').value || '').toLowerCase().trim();
+      const el = document.getElementById('searchResults');
+      if (!q) { el.innerHTML = '<div class="empty"><div class="icon">🔍</div>Digite para pesquisar</div>'; return; }
+
+      let html = '';
+      const events = data.events.filter(e => e.title.toLowerCase().includes(q) || (e.location||'').toLowerCase().includes(q) || (e.notes||'').toLowerCase().includes(q));
+      const tasks = data.tasks.filter(t => t.title.toLowerCase().includes(q) || (t.notes||'').toLowerCase().includes(q));
+      const notes = data.notes.filter(n => (n.title||'').toLowerCase().includes(q) || (n.content||'').toLowerCase().includes(q));
+      const bdays = data.birthdays.filter(b => b.name.toLowerCase().includes(q));
+
+      if (events.length) {
+        html += '<div class="card"><div class="card-title">Eventos</div>';
+        events.forEach(e => {
+          html += `<div class="event-item" onclick="openModal('event','${e.id}')">
+            <div class="event-dot" style="background:${catColor(e.category)}"></div>
+            <div class="event-body"><div class="event-title">${esc(e.title)}</div>
+            <div class="event-meta">${formatDateTime(new Date(e.date))}</div></div></div>`;
+        });
+        html += '</div>';
+      }
+      if (tasks.length) {
+        html += '<div class="card"><div class="card-title">Tarefas</div>';
+        tasks.forEach(t => {
+          html += `<div class="event-item" onclick="openModal('task','${t.id}')">
+            <div class="check ${t.done?'done':''}">${t.done?'✓':''}</div>
+            <div class="event-body"><div class="event-title">${esc(t.title)}</div></div></div>`;
+        });
+        html += '</div>';
+      }
+      if (notes.length) {
+        html += '<div class="card"><div class="card-title">Notas</div>';
+        notes.forEach(n => {
+          html += `<div class="note-item" onclick="openModal('note','${n.id}')">
+            <div>📄</div><div class="event-body"><div class="event-title">${esc(n.title||'Sem título')}</div></div></div>`;
+        });
+        html += '</div>';
+      }
+      if (bdays.length) {
+        html += '<div class="card"><div class="card-title">Aniversários</div>';
+        bdays.forEach(b => {
+          html += `<div class="bday-item" onclick="openModal('birthday','${b.id}')">
+            <div>🎂</div><div class="event-body"><div class="event-title">${esc(b.name)}</div></div></div>`;
+        });
+        html += '</div>';
+      }
+      if (!html) html = '<div class="empty"><div class="icon">😕</div>Nenhum resultado</div>';
+      el.innerHTML = html;
+    }
+
+    // ==================== SETTINGS / STATS ====================
+    function renderSettings() {
+      document.getElementById('firstDayWeek').value = data.settings.firstDay || 0;
+      document.getElementById('timeFormat').value = data.settings.timeFormat || '24';
+      document.getElementById('userName').value = data.settings.userName || '';
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === (data.settings.theme||'light')));
+
+      const done = data.tasks.filter(t => t.done).length;
+      const pending = data.tasks.filter(t => !t.done).length;
+      const overdue = data.tasks.filter(t => !t.done && t.due && new Date(t.due) < new Date()).length;
+      const totalEv = data.events.length;
+      const rate = data.tasks.length ? Math.round(done / data.tasks.length * 100) : 0;
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="stat-value">${totalEv}</div><div class="stat-label">Eventos</div></div>
+        <div class="stat-card"><div class="stat-value">${done}</div><div class="stat-label">Tarefas concluídas</div></div>
+        <div class="stat-card"><div class="stat-value">${pending}</div><div class="stat-label">Pendentes</div></div>
+        <div class="stat-card"><div class="stat-value">${overdue}</div><div class="stat-label">Atrasadas</div></div>
+        <div class="stat-card"><div class="stat-value">${rate}%</div><div class="stat-label">Taxa de conclusão</div></div>
+        <div class="stat-card"><div class="stat-value">${data.birthdays.length}</div><div class="stat-label">Aniversários</div></div>
+      `;
+    }
+
+    function exportData() {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `agenda-backup-${formatDate(new Date()).replace(/\//g,'-')}.json`;
+      a.click();
+      toast('Backup exportado!');
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const imported = JSON.parse(ev.target.result);
+          if (imported.events || imported.tasks || imported.notes) {
+            if (confirm('Isso substituirá todos os dados atuais. Continuar?')) {
+              data = imported;
+              if (!data.settings) data.settings = { theme: 'light', firstDay: 0, timeFormat: '24', userName: '' };
+              saveData();
+              setTheme(data.settings.theme || 'light');
+              renderHome();
+              toast('Backup importado!');
+            }
+          } else toast('Arquivo inválido');
+        } catch { toast('Erro ao importar'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    }
+
+    function clearAllData() {
+      if (confirm('Apagar TODOS os dados? Esta ação não pode ser desfeita.')) {
+        data = { events: [], tasks: [], notes: [], birthdays: [], settings: data.settings };
+        saveData();
+        renderHome();
+        toast('Dados limpos');
+      }
+    }
+
+    // ==================== SMART INPUT ====================
+    function parseSmartInput() {
+      const text = document.getElementById('smartInput').value.trim();
+      if (!text) return;
+
+      const lower = text.toLowerCase();
+
+      // Birthday: "aniversário da Maria dia 20 de novembro"
+      const bdayMatch = lower.match(/anivers[aá]rio\s+(?:d[aeo]\s+)?(.+?)\s+dia\s+(\d{1,2})\s+de\s+(\w+)/i);
+      if (bdayMatch) {
+        const name = bdayMatch[1].replace(/^(da|de|do)\s+/i, '').trim();
+        const day = parseInt(bdayMatch[2]);
+        const monthNames = { janeiro:0,fevereiro:1,março:2,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11 };
+        const month = monthNames[bdayMatch[3].toLowerCase()];
+        if (month !== undefined) {
+          const year = new Date().getFullYear() - 30; // placeholder year
+          data.birthdays.push({ id: uid(), name: capitalize(name), date: new Date(year, month, day).toISOString(), phone: '', notes: '' });
+          saveData();
+          document.getElementById('smartInput').value = '';
+          toast(`🎂 Aniversário de ${capitalize(name)} criado!`);
+          renderHome();
+          return;
+        }
+      }
+
+      // Event/appointment: "Dentista dia 15 às 14h, lembrar 1 dia antes"
+      let title = text;
+      let day = null, month = null, hour = 9, minute = 0;
+      let remindDays = null, remindMins = null;
+
+      // Extract day
+      const dayMatch = lower.match(/dia\s+(\d{1,2})/);
+      if (dayMatch) day = parseInt(dayMatch[1]);
+
+      // Extract month name
+      const monthNames = { janeiro:0,fevereiro:1,março:2,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11 };
+      for (const [name, num] of Object.entries(monthNames)) {
+        if (lower.includes(name)) { month = num; break; }
+      }
+
+      // Extract time: às 14h, as 14:30, 14h30
+      const timeMatch = lower.match(/(?:[aà]s?\s+)?(\d{1,2})(?:h|:)?(\d{2})?/);
+      if (timeMatch) {
+        hour = parseInt(timeMatch[1]);
+        minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+      }
+
+      // Reminders
+      if (lower.includes('1 dia antes') || lower.includes('um dia antes')) remindDays = 1;
+      if (lower.includes('1 hora antes') || lower.includes('uma hora antes')) remindMins = 60;
+      if (lower.match(/(\d+)\s*minutos?\s*antes/)) remindMins = parseInt(lower.match(/(\d+)\s*minutos?\s*antes/)[1]);
+      if (lower.includes('30 minutos antes')) remindMins = 30;
+      if (lower.includes('15 minutos antes')) remindMins = 15;
+
+      // Clean title
+      title = text
+        .replace(/dia\s+\d{1,2}/gi, '')
+        .replace(/(?:de\s+)?(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/gi, '')
+        .replace(/(?:[aà]s?\s+)?\d{1,2}(?:h|:)?\d{0,2}/gi, '')
+        .replace(/,??\s*lembrar\s+.*/gi, '')
+        .replace(/,??\s*\d+\s*minutos?\s*antes/gi, '')
+        .replace(/,??\s*(um|1)\s*(dia|hora)\s*antes/gi, '')
+        .trim()
+        .replace(/,\s*$/, '')
+        .trim();
+
+      if (!title) title = 'Compromisso';
+
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = month !== null ? month : (day && day < now.getDate() ? now.getMonth() + 1 : now.getMonth());
+      const dd = day || now.getDate();
+      let eventDate = new Date(y, m % 12, dd, hour, minute);
+      if (eventDate < now && month === null) eventDate.setMonth(eventDate.getMonth() + 1);
+
+      const reminders = [];
+      if (remindDays) reminders.push(remindDays * 24 * 60);
+      if (remindMins) reminders.push(remindMins);
+      if (!reminders.length) reminders.push(60); // default 1h before
+
+      // Detect type
+      let type = 'event';
+      let category = 'pessoal';
+      const healthWords = ['dentista','médico','medico','consulta','exame','hospital','clínica','clinica'];
+      if (healthWords.some(w => lower.includes(w))) { type = 'consulta'; category = 'saude'; }
+
+      data.events.push({
+        id: uid(),
+        title: capitalize(title),
+        date: eventDate.toISOString(),
+        category,
+        type,
+        location: '',
+        notes: '',
+        reminders,
+        recurrence: 'none'
+      });
+      saveData();
+      document.getElementById('smartInput').value = '';
+      toast(`📅 "${capitalize(title)}" criado para ${formatDateTime(eventDate)}`);
+      renderHome();
+      scheduleNotifications();
+    }
+
+    function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    // ==================== MODALS ====================
+    function openModal(type, id) {
+      document.getElementById('quickMenu').classList.remove('show');
+      editingType = type;
+      editingId = id || null;
+      const overlay = document.getElementById('modalOverlay');
+      const content = document.getElementById('modalContent');
+      let item = null;
+      if (id) {
+        if (type === 'event' || type === 'consulta') item = data.events.find(e => e.id === id);
+        if (type === 'task') item = data.tasks.find(t => t.id === id);
+        if (type === 'note') item = data.notes.find(n => n.id === id);
+        if (type === 'birthday') item = data.birthdays.find(b => b.id === id);
+      }
+
+      const catOptions = CATEGORIES.map(c =>
+        `<option value="${c.id}" ${item && item.category===c.id?'selected':''}>${c.icon} ${c.name}</option>`
+      ).join('');
+
+      if (type === 'event' || type === 'consulta') {
+        const isConsulta = type === 'consulta' || (item && item.type === 'consulta');
+        const d = item ? new Date(item.date) : new Date();
+        const dateVal = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        const timeVal = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3>${item ? 'Editar' : 'Novo'} ${isConsulta ? 'Consulta' : 'Evento'}</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="form-group"><label>Título</label><input id="fTitle" value="${esc(item?.title||'')}" placeholder="Ex: Consulta dentista" /></div>
+          ${isConsulta ? `
+            <div class="form-row">
+              <div class="form-group"><label>Médico</label><input id="fDoctor" value="${esc(item?.doctor||'')}" /></div>
+              <div class="form-group"><label>Especialidade</label><input id="fSpecialty" value="${esc(item?.specialty||'')}" /></div>
+            </div>` : ''}
+          <div class="form-row">
+            <div class="form-group"><label>Data</label><input type="date" id="fDate" value="${dateVal}" /></div>
+            <div class="form-group"><label>Horário</label><input type="time" id="fTime" value="${timeVal}" /></div>
+          </div>
+          <div class="form-group"><label>Local</label><input id="fLocation" value="${esc(item?.location||'')}" placeholder="Endereço ou local" /></div>
+          <div class="form-group"><label>Categoria</label><select id="fCategory">${catOptions}</select></div>
+          <div class="form-group"><label>Recorrência</label>
+            <select id="fRecurrence">
+              <option value="none" ${!item?.recurrence||item?.recurrence==='none'?'selected':''}>Nenhuma</option>
+              <option value="daily" ${item?.recurrence==='daily'?'selected':''}>Diária</option>
+              <option value="weekly" ${item?.recurrence==='weekly'?'selected':''}>Semanal</option>
+              <option value="monthly" ${item?.recurrence==='monthly'?'selected':''}>Mensal</option>
+              <option value="yearly" ${item?.recurrence==='yearly'?'selected':''}>Anual</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Lembretes (minutos antes)</label>
+            <select id="fReminder">
+              <option value="0">Nenhum</option>
+              <option value="5" ${item?.reminders?.includes(5)?'selected':''}>5 min</option>
+              <option value="15" ${item?.reminders?.includes(15)?'selected':''}>15 min</option>
+              <option value="30" ${item?.reminders?.includes(30)?'selected':''}>30 min</option>
+              <option value="60" ${!item || item?.reminders?.includes(60)?'selected':''}>1 hora</option>
+              <option value="1440" ${item?.reminders?.includes(1440)?'selected':''}>1 dia</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Observações</label><textarea id="fNotes" rows="3">${esc(item?.notes||'')}</textarea></div>
+          <button class="btn btn-primary" onclick="saveItem('event')">${item?'Salvar':'Criar'}</button>
+          ${item ? `<div class="btn-group"><button class="btn btn-danger" onclick="deleteItem('event')">Excluir</button></div>` : ''}
+        `;
+        if (isConsulta) content.querySelector('#fCategory').value = item?.category || 'saude';
+      }
+
+      else if (type === 'task') {
+        const d = item?.due ? new Date(item.due) : null;
+        const dateVal = d ? `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` : '';
+        const timeVal = d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : '';
+        const subs = (item?.subtasks || []).map(s => s.text).join('\n');
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3>${item ? 'Editar' : 'Nova'} Tarefa</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="form-group"><label>Título</label><input id="fTitle" value="${esc(item?.title||'')}" placeholder="Ex: Comprar material elétrico" /></div>
+          <div class="form-row">
+            <div class="form-group"><label>Prioridade</label>
+              <select id="fPriority">
+                <option value="baixa" ${item?.priority==='baixa'?'selected':''}>Baixa</option>
+                <option value="media" ${!item||item?.priority==='media'?'selected':''}>Média</option>
+                <option value="alta" ${item?.priority==='alta'?'selected':''}>Alta</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Categoria</label><select id="fCategory">${catOptions}</select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Data</label><input type="date" id="fDate" value="${dateVal}" /></div>
+            <div class="form-group"><label>Horário</label><input type="time" id="fTime" value="${timeVal}" /></div>
+          </div>
+          <div class="form-group"><label>Subtarefas (uma por linha)</label><textarea id="fSubtasks" rows="4" placeholder="Disjuntor 20 A&#10;Cabo 2,5 mm²&#10;Tomadas">${esc(subs)}</textarea></div>
+          <div class="form-group"><label>Observações</label><textarea id="fNotes" rows="2">${esc(item?.notes||'')}</textarea></div>
+          <button class="btn btn-primary" onclick="saveItem('task')">${item?'Salvar':'Criar'}</button>
+          ${item ? `<div class="btn-group"><button class="btn btn-danger" onclick="deleteItem('task')">Excluir</button></div>` : ''}
+        `;
+      }
+
+      else if (type === 'note') {
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3>${item ? 'Editar' : 'Nova'} Nota</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="form-group"><label>Título</label><input id="fTitle" value="${esc(item?.title||'')}" placeholder="Título da nota" /></div>
+          <div class="form-group"><label>Conteúdo</label><textarea id="fContent" rows="8" placeholder="Escreva aqui...">${esc(item?.content||'')}</textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>Categoria</label><select id="fCategory">${catOptions}</select></div>
+            <div class="form-group"><label>Cor</label>
+              <select id="fColor">
+                <option value="#3b82f6">Azul</option>
+                <option value="#16a34a">Verde</option>
+                <option value="#d97706">Laranja</option>
+                <option value="#dc2626">Vermelho</option>
+                <option value="#7c3aed">Roxo</option>
+                <option value="#ec4899">Rosa</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem">
+              <input type="checkbox" id="fPinned" ${item?.pinned?'checked':''} /> 📌 Fixar
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem">
+              <input type="checkbox" id="fFavorite" ${item?.favorite?'checked':''} /> ⭐ Favorito
+            </label>
+          </div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="saveItem('note')">${item?'Salvar':'Criar'}</button>
+          ${item ? `<div class="btn-group"><button class="btn btn-danger" onclick="deleteItem('note')">Excluir</button></div>` : ''}
+        `;
+        if (item?.color) content.querySelector('#fColor').value = item.color;
+        if (item?.category) content.querySelector('#fCategory').value = item.category;
+      }
+
+      else if (type === 'birthday') {
+        const d = item ? new Date(item.date) : new Date();
+        const dateVal = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        content.innerHTML = `
+          <div class="modal-header">
+            <h3>${item ? 'Editar' : 'Novo'} Aniversário</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="form-group"><label>Nome</label><input id="fName" value="${esc(item?.name||'')}" placeholder="Nome da pessoa" /></div>
+          <div class="form-group"><label>Data de nascimento</label><input type="date" id="fDate" value="${dateVal}" /></div>
+          <div class="form-group"><label>Telefone</label><input id="fPhone" value="${esc(item?.phone||'')}" placeholder="(00) 00000-0000" /></div>
+          <div class="form-group"><label>Observações</label><textarea id="fNotes" rows="2">${esc(item?.notes||'')}</textarea></div>
+          <button class="btn btn-primary" onclick="saveItem('birthday')">${item?'Salvar':'Criar'}</button>
+          ${item ? `<div class="btn-group"><button class="btn btn-danger" onclick="deleteItem('birthday')">Excluir</button></div>` : ''}
+        `;
+      }
+
+      overlay.classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('show');
+      editingId = null;
+      editingType = null;
+    }
+
+    function saveItem(type) {
+      if (type === 'event') {
+        const title = document.getElementById('fTitle').value.trim();
+        if (!title) return toast('Informe o título');
+        const dateStr = document.getElementById('fDate').value;
+        const timeStr = document.getElementById('fTime').value || '09:00';
+        const dt = new Date(`${dateStr}T${timeStr}`);
+        const remindVal = parseInt(document.getElementById('fReminder').value);
+        const obj = {
+          id: editingId || uid(),
+          title,
+          date: dt.toISOString(),
+          category: document.getElementById('fCategory').value,
+          type: document.getElementById('fDoctor') ? 'consulta' : 'event',
+          location: document.getElementById('fLocation').value.trim(),
+          notes: document.getElementById('fNotes').value.trim(),
+          recurrence: document.getElementById('fRecurrence').value,
+          reminders: remindVal ? [remindVal] : [],
+          doctor: document.getElementById('fDoctor')?.value.trim() || '',
+          specialty: document.getElementById('fSpecialty')?.value.trim() || ''
+        };
+        if (editingId) {
+          const idx = data.events.findIndex(e => e.id === editingId);
+          if (idx >= 0) data.events[idx] = obj;
+        } else data.events.push(obj);
+        toast(editingId ? 'Evento atualizado' : 'Evento criado');
+      }
+
+      else if (type === 'task') {
+        const title = document.getElementById('fTitle').value.trim();
+        if (!title) return toast('Informe o título');
+        const dateStr = document.getElementById('fDate').value;
+        const timeStr = document.getElementById('fTime').value;
+        let due = null;
+        if (dateStr) due = new Date(`${dateStr}T${timeStr||'09:00'}`).toISOString();
+        const subLines = document.getElementById('fSubtasks').value.split('\n').map(s => s.trim()).filter(Boolean);
+        const existing = editingId ? data.tasks.find(t => t.id === editingId) : null;
+        const subtasks = subLines.map((text, i) => ({
+          text,
+          done: existing?.subtasks?.[i]?.done || false
+        }));
+        const obj = {
+          id: editingId || uid(),
+          title,
+          priority: document.getElementById('fPriority').value,
+          category: document.getElementById('fCategory').value,
+          due,
+          notes: document.getElementById('fNotes').value.trim(),
+          subtasks,
+          done: existing?.done || false,
+          created: existing?.created || new Date().toISOString()
+        };
+        if (editingId) {
+          const idx = data.tasks.findIndex(t => t.id === editingId);
+          if (idx >= 0) data.tasks[idx] = obj;
+        } else data.tasks.push(obj);
+        toast(editingId ? 'Tarefa atualizada' : 'Tarefa criada');
+      }
+
+      else if (type === 'note') {
+        const title = document.getElementById('fTitle').value.trim();
+        const content = document.getElementById('fContent').value.trim();
+        if (!title && !content) return toast('Escreva algo');
+        const existing = editingId ? data.notes.find(n => n.id === editingId) : null;
+        const obj = {
+          id: editingId || uid(),
+          title,
+          content,
+          category: document.getElementById('fCategory').value,
+          color: document.getElementById('fColor').value,
+          pinned: document.getElementById('fPinned').checked,
+          favorite: document.getElementById('fFavorite').checked,
+          created: existing?.created || new Date().toISOString(),
+          updated: new Date().toISOString()
+        };
+        if (editingId) {
+          const idx = data.notes.findIndex(n => n.id === editingId);
+          if (idx >= 0) data.notes[idx] = obj;
+        } else data.notes.push(obj);
+        toast(editingId ? 'Nota atualizada' : 'Nota criada');
+      }
+
+      else if (type === 'birthday') {
+        const name = document.getElementById('fName').value.trim();
+        if (!name) return toast('Informe o nome');
+        const dateStr = document.getElementById('fDate').value;
+        if (!dateStr) return toast('Informe a data');
+        const obj = {
+          id: editingId || uid(),
+          name,
+          date: new Date(dateStr + 'T12:00:00').toISOString(),
+          phone: document.getElementById('fPhone').value.trim(),
+          notes: document.getElementById('fNotes').value.trim()
+        };
+        if (editingId) {
+          const idx = data.birthdays.findIndex(b => b.id === editingId);
+          if (idx >= 0) data.birthdays[idx] = obj;
+        } else data.birthdays.push(obj);
+        toast(editingId ? 'Aniversário atualizado' : 'Aniversário criado');
+      }
+
+      saveData();
+      closeModal();
+      scheduleNotifications();
+      // Refresh current page
+      const active = document.querySelector('.page.active');
+      if (active) {
+        const page = active.id.replace('page-', '');
+        goPage(page);
+      }
+    }
+
+    function deleteItem(type) {
+      if (!confirm('Excluir este item?')) return;
+      if (type === 'event') data.events = data.events.filter(e => e.id !== editingId);
+      if (type === 'task') data.tasks = data.tasks.filter(t => t.id !== editingId);
+      if (type === 'note') data.notes = data.notes.filter(n => n.id !== editingId);
+      if (type === 'birthday') data.birthdays = data.birthdays.filter(b => b.id !== editingId);
+      saveData();
+      closeModal();
+      toast('Item excluído');
+      const active = document.querySelector('.page.active');
+      if (active) goPage(active.id.replace('page-', ''));
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ==================== NOTIFICATIONS ====================
+    let notifPermission = false;
+
+    async function requestNotifPermission() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'granted') { notifPermission = true; return; }
+      if (Notification.permission !== 'denied') {
+        const p = await Notification.requestPermission();
+        notifPermission = p === 'granted';
+      }
+    }
+
+    function testNotification() {
+      requestNotifPermission().then(() => {
+        if (notifPermission) {
+          new Notification('Agenda Inteligente', { body: 'Notificação de teste funcionando! 🔔', icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📅</text></svg>' });
+          toast('Notificação enviada!');
+        } else {
+          toast('Permissão de notificação negada. Ative nas configurações do navegador.');
+        }
+      });
+    }
+
+    function scheduleNotifications() {
+      // Browser notifications are limited when app is closed.
+      // We check every minute for upcoming reminders.
+      // For true background alarms, a native wrapper (Capacitor/Cordova) is needed.
+    }
+
+    function checkReminders() {
+      if (!notifPermission) return;
+      const now = new Date();
+      data.events.forEach(e => {
+        if (!e.reminders || !e.reminders.length) return;
+        const eventDate = new Date(e.date);
+        e.reminders.forEach(mins => {
+          const remindAt = new Date(eventDate.getTime() - mins * 60000);
+          const diff = Math.abs(now - remindAt);
+          if (diff < 30000 && !e._notified?.[mins]) { // within 30s window
+            new Notification('Lembrete: ' + e.title, {
+              body: `${formatTime(eventDate)} · ${mins >= 1440 ? (mins/1440)+' dia(s)' : mins+' min'} antes`,
+              tag: e.id + '-' + mins
+            });
+            if (!e._notified) e._notified = {};
+            e._notified[mins] = true;
+            saveData();
+          }
+        });
+      });
+    }
+
+    // ==================== INIT ====================
+    document.getElementById('btnSearch').onclick = () => {
+      goPage('search');
+      setTimeout(() => document.getElementById('globalSearch').focus(), 100);
+    };
+
+    document.getElementById('btnNotif').onclick = () => goPage('reminders');
+
+    document.getElementById('smartInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') parseSmartInput();
+    });
+
+    // Sample data on first run
+    function seedIfEmpty() {
+      if (data.events.length || data.tasks.length || data.notes.length || data.birthdays.length) return;
+      const now = new Date();
+      const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(14,0,0,0);
+      const nextWeek = new Date(now); nextWeek.setDate(nextWeek.getDate()+5); nextWeek.setHours(10,30,0,0);
+
+      data.events.push({
+        id: uid(), title: 'Consulta dentista', date: tomorrow.toISOString(),
+        category: 'saude', type: 'consulta', location: 'Clínica Sorriso', notes: '',
+        reminders: [1440, 60], recurrence: 'none', doctor: 'Dr. Silva', specialty: 'Dentista'
+      });
+      data.events.push({
+        id: uid(), title: 'Reunião de equipe', date: nextWeek.toISOString(),
+        category: 'trabalho', type: 'event', location: 'Sala 3', notes: 'Levar relatório',
+        reminders: [30], recurrence: 'weekly'
+      });
+      data.tasks.push({
+        id: uid(), title: 'Comprar material elétrico', priority: 'alta', category: 'casa',
+        due: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0).toISOString(),
+        notes: '', done: false, created: now.toISOString(),
+        subtasks: [
+          { text: 'Disjuntor 20 A', done: false },
+          { text: 'Cabo 2,5 mm²', done: false },
+          { text: 'Tomadas', done: false },
+          { text: 'Eletroduto', done: true }
+        ]
+      });
+      data.tasks.push({
+        id: uid(), title: 'Revisar relatório mensal', priority: 'media', category: 'trabalho',
+        due: null, notes: '', done: false, created: now.toISOString(), subtasks: []
+      });
+      data.notes.push({
+        id: uid(), title: 'Ideias para o app', content: '• Modo offline\n• Sincronização na nuvem\n• Widgets\n• Integração com calendário do sistema',
+        category: 'estudos', color: '#7c3aed', pinned: true, favorite: false,
+        created: now.toISOString(), updated: now.toISOString()
+      });
+      data.birthdays.push({
+        id: uid(), name: 'Maria Silva', date: new Date(1990, 10, 20).toISOString(), phone: '', notes: 'Prima'
+      });
+      data.birthdays.push({
+        id: uid(), name: 'João Santos', date: new Date(1985, now.getMonth(), now.getDate()).toISOString(), phone: '', notes: 'Colega de trabalho'
+      });
+      saveData();
+    }
+
+    loadData();
+    setTheme(data.settings.theme || 'light');
+    seedIfEmpty();
+    requestNotifPermission();
+    renderHome();
+    setInterval(checkReminders, 15000);
+
+    // Register service worker for PWA (optional, basic)
+    if ('serviceWorker' in navigator) {
+      // Inline minimal SW via blob for offline shell
+      const swCode = `
+        const CACHE = 'agenda-v1';
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./','./index.html','./manifest.json'])));
+          self.skipWaiting();
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+        });
+      `;
+      // Skip SW registration in file:// context
+    }
+  </script>
+</body>
+</html{
+  "name": "Agenda Inteligente",
+  "short_name": "Agenda",
+  "description": "Agenda inteligente com calendário, tarefas, lembretes, aniversários e notas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "pt-BR"
+}
+
